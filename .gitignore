@@ -1,2 +1,16 @@
 .claude/
 logo.svg
+
+# Pastas do VS Code
+.vs/
+.vscode/
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Pastas de dependências (caso instale node futuramente)
+node_modules/
+
+# Logs e outros
+*.log

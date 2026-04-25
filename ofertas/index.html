@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Arsa Promos - Ver mais ofertas, promoções e cupons liberados diariamente." />
+  <title>Arsa Promos | Mais Ofertas</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="container header__inner">
+      <a href="../" class="logo">
+        <img src="../logo.png" alt="Arsa Promos" class="logo__icon" />
+        <span class="logo__text">Arsa <strong>Promos</strong></span>
+      </a>
+      <nav class="nav" aria-label="Navegação principal">
+        <a href="../#plataformas" class="nav__link">Parcerias</a>
+        <a href="../#como-funciona" class="nav__link">Como Funciona</a>
+        <a href="./" class="nav__link">Ofertas</a>
+      </nav>
+      <div class="header__social"></div>
+    </div>
+  </header>
+
+  <section class="section" id="ofertas">
+    <div class="container">
+      <div class="section__header">
+        <h1 class="section__title">Mais Ofertas</h1>
+        <p class="section__subtitle">Novas ofertas e cupons todos os dias 🌊</p>
+      </div>
+
+      <div class="coupons__grid" id="offersGrid">
+        <div class="coupon-card coupon-card--loading">
+          <p class="coupon-card__loading-text">Carregando ofertas...</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const offersGrid = document.getElementById('offersGrid');
+
+    function escapeHtml(value) {
+      if (typeof value !== 'string') return '';
+      return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function renderOffers(offers) {
+      if (!offersGrid) return;
+
+      if (!Array.isArray(offers) || offers.length === 0) {
+        offersGrid.innerHTML = '<div class="coupon-card coupon-card--loading"><p class="coupon-card__loading-text">Sem ofertas no momento.</p></div>';
+        return;
+      }
+
+      offersGrid.innerHTML = offers.map((offer) => {
+        const badgeClass = offer.store === 'amazon' ? 'coupon-badge--amz' : 'coupon-badge--ml';
+        const badgeText = offer.badge || (offer.store === 'amazon' ? 'AMZ' : 'ML');
+        const tag = offer.tag || 'Oferta';
+        const title = offer.title || 'Oferta especial';
+        const priceFinal = offer.priceFinalFormatted || 'Consulte o preço';
+        const priceOriginal = offer.priceOriginalFormatted || '';
+        const discount = offer.discountLabel || '';
+        const image = offer.image || '';
+        const link = offer.affiliateUrl || offer.url || '#';
+
+        return `
+          <article class="coupon-card">
+            <a href="${escapeHtml(link)}" class="coupon-card__image-link" target="_blank" rel="noopener noreferrer" aria-label="Abrir oferta de ${escapeHtml(title)}">
+              ${image
+                ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" class="coupon-card__image" loading="lazy" />`
+                : '<div class="coupon-card__image coupon-card__image--placeholder">Sem foto</div>'}
+            </a>
+            <div class="coupon-card__header">
+              <span class="coupon-badge ${badgeClass}">${escapeHtml(badgeText)}</span>
+              <span class="coupon-tag">${escapeHtml(tag)}</span>
+            </div>
+            <h3 class="coupon-card__title">${escapeHtml(title)}</h3>
+            <div class="coupon-card__pricing">
+              ${priceOriginal ? `<span class="price--original">${escapeHtml(priceOriginal)}</span>` : ''}
+              ${discount ? `<span class="price--off">${escapeHtml(discount)}</span>` : ''}
+            </div>
+            <span class="price--final">${escapeHtml(priceFinal)}</span>
+            <a href="${escapeHtml(link)}" class="btn btn--primary btn--full" target="_blank" rel="noopener noreferrer">Ver Oferta</a>
+          </article>
+        `;
+      }).join('');
+    }
+
+    async function loadOffers() {
+      try {
+        const response = await fetch('../offers.json?t=' + Date.now());
+        if (!response.ok) throw new Error('Falha ao carregar ofertas');
+        const payload = await response.json();
+        renderOffers(payload.offers || []);
+      } catch (error) {
+        if (offersGrid) {
+          offersGrid.innerHTML = '<div class="coupon-card coupon-card--loading"><p class="coupon-card__loading-text">Não foi possível carregar as ofertas agora.</p></div>';
+        }
+      }
+    }
+
+    loadOffers();
+  </script>
+</body>
+</html>

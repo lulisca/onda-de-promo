@@ -30,6 +30,25 @@
         <p class="section__subtitle">Novas ofertas e cupons todos os dias 🌊</p>
       </div>
 
+      <div class="search-bar" role="search">
+        <svg class="search-bar__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          type="search"
+          id="searchInput"
+          class="search-bar__input"
+          placeholder="Buscar produto, categoria ou loja..."
+          aria-label="Buscar ofertas"
+          autocomplete="off"
+        />
+        <button class="search-bar__clear" id="searchClear" aria-label="Limpar busca">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
       <div class="coupons__grid" id="offersGrid">
         <div class="coupon-card coupon-card--loading">
           <p class="coupon-card__loading-text">Carregando ofertas...</p>
@@ -40,6 +59,9 @@
 
   <script>
     const offersGrid = document.getElementById('offersGrid');
+    const searchInput = document.getElementById('searchInput');
+    const searchClear = document.getElementById('searchClear');
+    let allOffers = [];
 
     function escapeHtml(value) {
       if (typeof value !== 'string') return '';
@@ -55,7 +77,16 @@
       if (!offersGrid) return;
 
       if (!Array.isArray(offers) || offers.length === 0) {
-        offersGrid.innerHTML = '<div class="coupon-card coupon-card--loading"><p class="coupon-card__loading-text">Sem ofertas no momento.</p></div>';
+        const query = searchInput ? searchInput.value.trim() : '';
+        if (query) {
+          offersGrid.innerHTML = `
+            <div class="search-empty">
+              <p class="search-empty__title">Nenhuma oferta encontrada</p>
+              <p>Tente buscar por outro produto ou categoria.</p>
+            </div>`;
+        } else {
+          offersGrid.innerHTML = '<div class="coupon-card coupon-card--loading"><p class="coupon-card__loading-text">Sem ofertas no momento.</p></div>';
+        }
         return;
       }
 
@@ -93,12 +124,47 @@
       }).join('');
     }
 
+    function filterOffers(query) {
+      if (!query) {
+        renderOffers(allOffers);
+        return;
+      }
+      const q = query.toLowerCase();
+      const filtered = allOffers.filter((offer) => {
+        return (
+          (offer.title || '').toLowerCase().includes(q) ||
+          (offer.tag || '').toLowerCase().includes(q) ||
+          (offer.store || '').toLowerCase().includes(q) ||
+          (offer.badge || '').toLowerCase().includes(q)
+        );
+      });
+      renderOffers(filtered);
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener('input', () => {
+        const query = searchInput.value.trim();
+        searchClear.classList.toggle('visible', query.length > 0);
+        filterOffers(query);
+      });
+    }
+
+    if (searchClear) {
+      searchClear.addEventListener('click', () => {
+        searchInput.value = '';
+        searchClear.classList.remove('visible');
+        filterOffers('');
+        searchInput.focus();
+      });
+    }
+
     async function loadOffers() {
       try {
         const response = await fetch('../offers.json?t=' + Date.now());
         if (!response.ok) throw new Error('Falha ao carregar ofertas');
         const payload = await response.json();
-        renderOffers(payload.offers || []);
+        allOffers = payload.offers || [];
+        renderOffers(allOffers);
       } catch (error) {
         if (offersGrid) {
           offersGrid.innerHTML = '<div class="coupon-card coupon-card--loading"><p class="coupon-card__loading-text">Não foi possível carregar as ofertas agora.</p></div>';
